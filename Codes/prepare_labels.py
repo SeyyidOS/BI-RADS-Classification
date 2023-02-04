@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 data = pd.read_excel(r"C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\Codes\veribilgisi.xlsx")
 data = data.reset_index()
-new_data = pd.DataFrame(columns=['img_name','birads_class','kompozisyon','kadran','alt-ic','alt-dis','ust-ic','merkez','ust-dis'])
+new_data = pd.DataFrame(columns=['img_name','birads_class0','birads_class12','birads_class45','A','B','C','D','kadran','alt-ic','alt-dis','ust-ic','merkez','ust-dis'])
 
 # aşağıdakiler one-hot yapılacak
 dict_birads = {"BI-RADS0":0, "BI-RADS1-2":1, "BI-RADS4-5":2}
@@ -23,8 +23,13 @@ for index, row in tqdm(data.iterrows()):
 
     # CC ve MLO olanları aynı labelledim, değişebilir
     new_row = {'img_name':str(row['HASTANO']) + "_RCC", 
-            'birads_class':right_class, 
-            'kompozisyon':dict_kompozisyon[row['MEME KOMPOZİSYONU']], 
+            'birads_class0':int(right_class == 0), 
+            'birads_class12':int(right_class == 1),
+            'birads_class45':int(right_class == 2),
+            'A':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 0),
+            'B':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 1),
+            'C':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 2),
+            'D':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 3), 
             'kadran':0, #sag icin
             'alt-ic': int('ALT İÇ' in str(row['KADRAN BİLGİSİ (SAĞ)'])),
             'ust-ic': int('ÜST İÇ' in str(row['KADRAN BİLGİSİ (SAĞ)'])),
@@ -34,8 +39,13 @@ for index, row in tqdm(data.iterrows()):
             }
 
     new_row2 = {'img_name':str(row['HASTANO']) + "_RMLO", 
-            'birads_class':right_class, 
-            'kompozisyon':dict_kompozisyon[row['MEME KOMPOZİSYONU']], 
+            'birads_class0':int(right_class == 0), 
+            'birads_class12':int(right_class == 1),
+            'birads_class45':int(right_class == 2),
+            'A':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 0),
+            'B':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 1),
+            'C':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 2),
+            'D':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 3), 
             'kadran':0, #sag icin
             'alt-ic': int('ALT İÇ' in str(row['KADRAN BİLGİSİ (SAĞ)'])),
             'ust-ic': int('ÜST İÇ' in str(row['KADRAN BİLGİSİ (SAĞ)'])),
@@ -45,8 +55,13 @@ for index, row in tqdm(data.iterrows()):
             }
 
     new_row3 = {'img_name':str(row['HASTANO']) + "_LCC", 
-            'birads_class':left_class, 
-            'kompozisyon':dict_kompozisyon[row['MEME KOMPOZİSYONU']], 
+            'birads_class0':int(left_class == 0), 
+            'birads_class12':int(left_class == 1),
+            'birads_class45':int(left_class == 2), 
+            'A':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 0),
+            'B':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 1),
+            'C':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 2),
+            'D':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 3), 
             'kadran':1, #sol icin
             'alt-ic': int('ALT İÇ' in str(row['KADRAN BİLGİSİ (SOL)'])),
             'ust-ic': int('ÜST İÇ' in str(row['KADRAN BİLGİSİ (SOL)'])),
@@ -56,8 +71,13 @@ for index, row in tqdm(data.iterrows()):
             }
 
     new_row4 = {'img_name':str(row['HASTANO']) + "_LMLO", 
-            'birads_class':left_class, 
-            'kompozisyon':dict_kompozisyon[row['MEME KOMPOZİSYONU']], 
+            'birads_class0':int(left_class == 0), 
+            'birads_class12':int(left_class == 1),
+            'birads_class45':int(left_class == 2), 
+            'A':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 0),
+            'B':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 1),
+            'C':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 2),
+            'D':int(dict_kompozisyon[row['MEME KOMPOZİSYONU']] == 3), 
             'kadran':1, #sol icin
             'alt-ic': int('ALT İÇ' in str(row['KADRAN BİLGİSİ (SOL)'])),
             'ust-ic': int('ÜST İÇ' in str(row['KADRAN BİLGİSİ (SOL)'])),
