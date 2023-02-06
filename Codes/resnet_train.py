@@ -8,6 +8,7 @@ import torch.backends.cudnn as cudnn
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
+from torch.utils.data import DataLoader, Dataset
 import matplotlib.pyplot as plt
 import time
 import os
@@ -30,27 +31,31 @@ class BIRadsDataset(Dataset):
         return len(self.img_labels)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0] + ".png")
+        img_name = self.img_labels.iloc[idx, 0]
+        img_path = os.path.join(self.img_dir+"\\"+img_name[:9]+"\\", img_name + ".png")
         image = read_image(img_path)
-        label = self.img_labels.iloc[idx, 1:3]
+        label = np.array(self.img_labels.iloc[idx, 4:8])
+        print(label,"*******************")
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
 
+# configuration before training
 training_data = BIRadsDataset(
     'images_with_labels.csv',
-    'imgdir',
+    r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\FTP_Final\FTP\dataset',
 )
-
 test_data = BIRadsDataset(
     'images_with_labels.csv',
-    'imgdir',
+    r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\FTP_Final\FTP\dataset',
 )
-
 train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+dataloaders = {'train':train_dataloader, 'test':test_dataloader}
+dataset_sizes = {'train':len(training_data), 'test':len(test_data)}
 
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
@@ -108,6 +113,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
+                torch.save(model.state_dict(), 'best.pt')
 
         print()
 
@@ -119,12 +125,26 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
     model.load_state_dict(best_model_wts)
     return model
 
+""" class MyModel(nn.Module):
+    def __init__(self, num_classes1, num_classes2):
+        super(MyModel, self).__init__()
+        self.model_resnet = models.resnet18(pretrained=True)
+        num_ftrs = self.model_resnet.fc.in_features
+        self.model_resnet.fc = nn.Identity()
+        self.fc1 = nn.Linear(num_ftrs, num_classes1)
+        self.fc2 = nn.Linear(num_ftrs, num_classes2)
+
+    def forward(self, x):
+        x = self.model_resnet(x)
+        out1 = self.fc1(x)
+        out2 = self.fc2(x)
+        return out1, out2 """
 
 model_ft = models.resnet18(pretrained=True)
 num_ftrs = model_ft.fc.in_features
 # Here the size of each output sample is set to 2.
 # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-model_ft.fc = nn.Linear(num_ftrs, 3)
+model_ft.fc = nn.Linear(num_ftrs, 4)
 
 model_ft = model_ft.to(device)
 
@@ -138,3 +158,5 @@ exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
                        num_epochs=25)
+
+torch.save(model_ft.state_dict(), 'last.pt')
