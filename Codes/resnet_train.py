@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
+import cv2
 
 import os
 import pandas as pd
@@ -22,7 +23,9 @@ cudnn.benchmark = True
 
 class BIRadsDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
-        self.img_labels = pd.read_csv(annotations_file)
+        self.img_labels = pd.read_csv(annotations_file, index_col=False)
+        print(self.img_labels.head())
+        #print(self.img_labels.iloc[0, 3:7])
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
@@ -34,28 +37,40 @@ class BIRadsDataset(Dataset):
         img_name = self.img_labels.iloc[idx, 0]
         img_path = os.path.join(self.img_dir+"\\"+img_name[:9]+"\\", img_name + ".png")
         image = read_image(img_path)
-        label = np.array(self.img_labels.iloc[idx, 4:8])
-        print(label,"*******************")
+        #image = cv2.imread(img_path)
+        #image = torch.tensor(image)
+        #image = image[:]
+        
+        label = np.array(self.img_labels.iloc[idx, 3:7]).astype(np.float32)
+        #print(label,"*******************")
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
+
+        image = image.repeat(3,1,1).to(torch.float32)
+        #print(image.shape)
+        #image = np.repeat(image[..., np.newaxis], 3, -1)
+        #print(image.shape)
         return image, label
 
 # configuration before training
 training_data = BIRadsDataset(
-    'images_with_labels.csv',
+    r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\Codes\images_with_labels.csv',
     r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\FTP_Final\FTP\dataset',
+    transform=torchvision.transforms.Resize((224,224))
 )
 test_data = BIRadsDataset(
-    'images_with_labels.csv',
+    r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\Codes\images_with_labels.csv',
     r'C:\Users\EMRE\Documents\Gits\BI-RADS-Classification\FTP_Final\FTP\dataset',
+    transform=torchvision.transforms.Resize((224,224))
 )
-train_dataloader = DataLoader(training_data, batch_size=64, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=64, shuffle=True)
+train_dataloader = DataLoader(training_data, batch_size=16, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=16, shuffle=True)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-dataloaders = {'train':train_dataloader, 'test':test_dataloader}
-dataset_sizes = {'train':len(training_data), 'test':len(test_data)}
+print("Device: ", device, "###############################")
+dataloaders = {'train':train_dataloader, 'val':test_dataloader}
+dataset_sizes = {'train':len(training_data), 'val':len(test_data)}
 
 
 def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
@@ -100,6 +115,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 
                 # statistics
                 running_loss += loss.item() * inputs.size(0)
+                _, labels = torch.max(labels, 1)
+                #print(preds.size())
+                #print(labels.data.size())
                 running_corrects += torch.sum(preds == labels.data)
             if phase == 'train':
                 scheduler.step()
@@ -157,6 +175,6 @@ optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
 model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
-                       num_epochs=25)
+                       num_epochs=10)
 
 torch.save(model_ft.state_dict(), 'last.pt')
